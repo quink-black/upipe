@@ -8,6 +8,7 @@ UPIPEAV_CFLAGS = $(AVUTIL_CFLAGS)
 UPIPESWS_LIBS = $(SWSCALE_LIBS) $(top_builddir)/lib/upipe-swscale/libupipe_swscale.la
 UPIPESWR_LIBS = $(SWRESAMPLE_LIBS) $(top_builddir)/lib/upipe-swresample/libupipe_swresample.la
 UPIPEGL_LIBS = $(GLX_LIBS) $(top_builddir)/lib/upipe-gl/libupipe_gl.la
+UPIPEGL2_LIBS = $(GLFW_LIBS) $(EPOXY_LIBS) $(top_builddir)/lib/upipe-gl2/libupipe_gl2.la
 UPIPEFILTERS_LIBS = $(top_builddir)/lib/upipe-filters/libupipe_filters.la
 UPIPEFRAMERS_LIBS = $(top_builddir)/lib/upipe-framers/libupipe_framers.la
 UPIPETS_LIBS = $(top_builddir)/lib/upipe-ts/libupipe_ts.la
@@ -31,13 +32,17 @@ hls2rtp_CFLAGS= -fno-strict-aliasing
 glxplay_CFLAGS = $(SWSCALE_CFLAGS)
 glxplay_LDADD = $(LDADD) $(UPUMPEV_LIBS) $(UPIPEMODULES_LIBS) $(UPIPEPTHREAD_LIBS) $(UPIPESWS_LIBS) $(UPIPEAV_LIBS) $(UPIPEGL_LIBS) $(UPIPEFILTERS_LIBS) $(UPIPEFRAMERS_LIBS) $(UPIPETS_LIBS) -lpthread
 uplay_LDADD = $(LDADD) $(UPUMPEV_LIBS) $(UPIPEMODULES_LIBS) $(UPIPEPTHREAD_LIBS) $(UPIPESWS_LIBS) $(UPIPESWR_LIBS) $(UPIPEAV_LIBS) $(UPIPEGL_LIBS) $(UPIPEFILTERS_LIBS) $(UPIPEFRAMERS_LIBS) $(UPIPETS_LIBS) -lpthread
+uplay2_LDADD = $(LDADD) $(UPUMPEV_LIBS) $(UPIPEMODULES_LIBS) $(UPIPEPTHREAD_LIBS) $(UPIPESWS_LIBS) $(UPIPESWR_LIBS) $(UPIPEAV_LIBS) $(UPIPEGL2_LIBS) $(UPIPEFILTERS_LIBS) $(UPIPEFRAMERS_LIBS) $(UPIPETS_LIBS) -lpthread
 if HAVE_ALSA
 uplay_LDADD += $(UPIPEALSA_LIBS)
+uplay2_LDADD += $(UPIPEALSA_LIBS)
 endif
 if HAVE_AUDIOTOOLBOX
 uplay_LDADD += $(UPIPEOSX_LIBS)
+uplay2_LDADD += $(UPIPEOSX_LIBS)
 endif
 uplay_CFLAGS = $(AM_CFLAGS) $(UPIPEAV_CFLAGS)
+uplay2_CFLAGS = $(AM_CFLAGS) $(UPIPEAV_CFLAGS)
 transcode_LDADD = $(LDADD) $(UPUMPEV_LIBS) $(UPIPEMODULES_LIBS) $(UPIPEAV_LIBS) $(UPIPESWR_LIBS) $(UPIPESWS_LIBS) $(UPIPEFILTERS_LIBS) $(UPIPEFRAMERS_LIBS)
 upipe_duration_LDADD = $(LDADD) $(UPUMPEV_LIBS) $(UPIPEMODULES_LIBS) $(UPIPEFRAMERS_LIBS) $(UPIPETS_LIBS)
 alsaplay_LDADD = $(LDADD) $(UPUMPEV_LIBS) $(UPIPEMODULES_LIBS) $(UPIPEFRAMERS_LIBS) $(UPIPEAV_LIBS) $(UPIPEALSA_LIBS) $(UPIPESWR_LIBS) $(UPIPEFILTERS_LIBS)
@@ -97,6 +102,11 @@ if HAVE_GLX
 noinst_PROGRAMS += glxplay
 noinst_PROGRAMS += uplay
 endif
+
+if HAVE_GLFW
+noinst_PROGRAMS += uplay2
+endif
+
 endif
 endif # swscale
 

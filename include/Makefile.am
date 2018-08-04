@@ -36,6 +36,10 @@ if HAVE_GLX
 SUBDIRS += upipe-gl
 endif
 
+if HAVE_GLFW
+SUBDIRS += upipe-gl2
+endif
+
 if HAVE_SWSCALE
 SUBDIRS += upipe-swscale
 endif

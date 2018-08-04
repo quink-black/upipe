@@ -130,6 +130,8 @@ PKG_CHECK_UPIPE(SWSCALE, libswscale >= 2.1.0 libavutil, [libswscale/swscale.h li
 PKG_CHECK_UPIPE(SWRESAMPLE, libswresample libavutil, [libswresample/swresample.h libavutil/avutil.h])
 PKG_CHECK_UPIPE(SPEEXDSP, speexdsp, [speex/speex_resampler.h])
 PKG_CHECK_UPIPE(GLX, gl glu x11, [GL/glx.h GL/glu.h GL/gl.h])
+PKG_CHECK_UPIPE(GLFW, glfw3, [GLFW/glfw3.h])
+PKG_CHECK_UPIPE(EPOXY, epoxy, [epoxy/gl.h])
 PKG_CHECK_UPIPE(X264, x264, [x264.h])
 PKG_CHECK_UPIPE(X265, x265, [x265.h])
 PKG_CHECK_UPIPE(ECORE, ecore, [Ecore.h])
@@ -241,6 +243,7 @@ AC_CONFIG_FILES([Makefile
                  include/upipe-swscale/Makefile
                  include/upipe-ts/Makefile
                  include/upipe-gl/Makefile
+                 include/upipe-gl2/Makefile
                  include/upipe-filters/Makefile
                  include/upipe-x264/Makefile
                  include/upipe-x265/Makefile
@@ -283,6 +286,8 @@ AC_CONFIG_FILES([Makefile
                  lib/upipe-ts/libupipe_ts.pc
                  lib/upipe-gl/Makefile
                  lib/upipe-gl/libupipe_gl.pc
+                 lib/upipe-gl2/Makefile
+                 lib/upipe-gl2/libupipe_gl2.pc
                  lib/upipe-filters/Makefile
                  lib/upipe-filters/libupipe_filters.pc
                  lib/upipe-x264/Makefile

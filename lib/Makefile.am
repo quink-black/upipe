@@ -28,6 +28,12 @@ if HAVE_GLX
 SUBDIRS += upipe-gl
 endif
 
+if HAVE_GLFW
+if HAVE_EPOXY
+SUBDIRS += upipe-gl2
+endif
+endif
+
 if HAVE_SWSCALE
 SUBDIRS += upipe-swscale
 endif
