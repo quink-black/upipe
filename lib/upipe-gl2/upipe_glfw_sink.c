@@ -99,6 +99,8 @@ struct upipe_glfw_sink {
 
     /** upump manager */
     struct upump_mgr *upump_mgr;
+    /** event watcher */
+    struct upump *upump_watcher;
     /** write watcher */
     struct upump *upump;
     /** public upipe structure */
@@ -110,6 +112,7 @@ UPIPE_HELPER_UREFCOUNT(upipe_glfw_sink, urefcount, upipe_glfw_sink_free)
 UPIPE_HELPER_VOID(upipe_glfw_sink)
 UPIPE_HELPER_UPUMP_MGR(upipe_glfw_sink, upump_mgr)
 UPIPE_HELPER_UPUMP(upipe_glfw_sink, upump, upump_mgr)
+UPIPE_HELPER_UPUMP(upipe_glfw_sink, upump_watcher, upump_mgr)
 UPIPE_HELPER_INPUT(upipe_glfw_sink, urefs, nb_urefs, max_urefs, blockers, upipe_glfw_sink_output)
 UPIPE_HELPER_UCLOCK(upipe_glfw_sink, uclock, uclock_request, NULL, upipe_throw_provide_request, NULL)
 
@@ -137,6 +140,33 @@ static void upipe_glfw_sink_key_cb(GLFWwindow *window, int key, int scancode, in
         else if (action == GLFW_RELEASE)
             upipe_throw(upipe, UPROBE_GLFW_SINK_KEYRELEASE, UPIPE_GLFW_SINK_SIGNATURE, key);
     }
+}
+
+static void upipe_glfw_sink_watcher_cb(struct upump *upump)
+{
+    struct upipe *upipe = upump_get_opaque(upump, struct upipe *);
+    struct upipe_glfw_sink *upipe_glfw_sink = upipe_glfw_sink_from_upipe(upipe);
+    glfwPollEvents();
+    if (glfwWindowShouldClose(upipe_glfw_sink->window)) {
+        upipe_throw(upipe, UPROBE_GLFW_SINK_WINDOW_CLOSE, UPIPE_GLFW_SINK_SIGNATURE);
+    }
+}
+
+static bool upipe_glfw_sink_init_watcher(struct upipe *upipe)
+{
+    struct upipe_glfw_sink *upipe_glfw_sink = upipe_glfw_sink_from_upipe(upipe);
+    if (upipe_glfw_sink->upump_mgr) {
+        struct upump *upump = upump_alloc_timer(upipe_glfw_sink->upump_mgr,
+                upipe_glfw_sink_watcher_cb, upipe, upipe->refcount,
+                27000000/1000, 27000000/1000);
+        if (unlikely(!upump)) {
+            return false;
+        } else {
+            upipe_glfw_sink_set_upump_watcher(upipe, upump);
+            upump_start(upump);
+        }
+    }
+    return true;
 }
 
 static int upipe_glfw_sink_init_glfw(struct upipe *upipe, int x, int y, int width, int height)
@@ -172,6 +202,8 @@ static int upipe_glfw_sink_init_glfw(struct upipe *upipe, int x, int y, int widt
                 UPIPE_GL2_SINK_SIGNATURE, width, height);
 
     upipe_glfw_sink_check_upump_mgr(upipe);
+    upipe_glfw_sink_init_watcher(upipe);
+
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);
     upipe_glfw_sink_framebuffer_size_cb(window, w, h);
@@ -197,6 +229,7 @@ static struct upipe *upipe_glfw_sink_alloc(struct upipe_mgr *mgr,
     upipe_glfw_sink_init_urefcount(upipe);
     upipe_glfw_sink_init_upump_mgr(upipe);
     upipe_glfw_sink_init_upump(upipe);
+    upipe_glfw_sink_init_upump_watcher(upipe);
     upipe_glfw_sink_init_input(upipe);
     upipe_glfw_sink_init_uclock(upipe);
     upipe_glfw_sink->max_urefs = BUFFER_UREFS;
@@ -234,7 +267,6 @@ static bool upipe_glfw_sink_output(struct upipe *upipe, struct uref *uref,
         uint64_t pts = 0;
         if (likely(ubase_check(uref_clock_get_pts_sys(uref, &pts)))) {
             pts += upipe_glfw_sink->latency;
-            glfwPollEvents();
             uint64_t now = uclock_now(upipe_glfw_sink->uclock);
             if (now < pts) {
                 upipe_verbose_va(upipe, "sleeping %"PRIu64" (%"PRIu64")",
@@ -360,7 +392,9 @@ static int upipe_glfw_sink_control(struct upipe *upipe,
     switch (command) {
         case UPIPE_ATTACH_UPUMP_MGR:
             upipe_glfw_sink_set_upump(upipe, NULL);
+            upipe_glfw_sink_set_upump_watcher(upipe, NULL);
             UBASE_RETURN(upipe_glfw_sink_attach_upump_mgr(upipe))
+            upipe_glfw_sink_init_watcher(upipe);
             return UBASE_ERR_NONE;
         case UPIPE_ATTACH_UCLOCK:
             upipe_glfw_sink_set_upump(upipe, NULL);
@@ -411,6 +445,7 @@ static void upipe_glfw_sink_free(struct upipe *upipe)
     struct upipe_glfw_sink *upipe_glfw_sink = upipe_glfw_sink_from_upipe(upipe);
     upipe_throw_dead(upipe);
     upipe_glfw_sink_clean_upump(upipe);
+    upipe_glfw_sink_clean_upump_watcher(upipe);
     upipe_glfw_sink_clean_upump_mgr(upipe);
     upipe_glfw_sink_clean_glfw(upipe);
     upipe_glfw_sink_clean_uclock(upipe);

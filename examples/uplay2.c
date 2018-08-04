@@ -168,45 +168,52 @@ static void uplay_stop(struct upump *upump);
 static int catch_glfw(struct uprobe *uprobe, struct upipe *upipe,
                      int event, va_list args)
 {
-    if (event == UPROBE_GLFW_SINK_KEYRELEASE)
+    if (event == UPROBE_GLFW_SINK_WINDOW_CLOSE) {
+        if (main_upump_mgr != NULL) {
+            upipe_notice_va(upipe, "window close, exiting");
+            struct upump *idler_stop = upump_alloc_idler(main_upump_mgr,
+                    uplay_stop, (void *)1, NULL);
+            upump_start(idler_stop);
+        }
+    } else if (event == UPROBE_GLFW_SINK_KEYRELEASE) {
         return UBASE_ERR_NONE;
+    } else if (event == UPROBE_GLFW_SINK_KEYPRESS) {
+        UBASE_SIGNATURE_CHECK(args, UPIPE_GLFW_SINK_SIGNATURE);
+        int key = va_arg(args, int);
 
-    if (event != UPROBE_GLFW_SINK_KEYPRESS)
-        return uprobe_throw_next(uprobe, upipe, event, args);
-
-    UBASE_SIGNATURE_CHECK(args, UPIPE_GLFW_SINK_SIGNATURE);
-    int key = va_arg(args, int);
-
-    switch (key) {
-        case 27:
-        case 'q': {
-            if (main_upump_mgr != NULL) {
-                upipe_notice_va(upipe, "exit key pressed (%d), exiting",
-                                key);
-                struct upump *idler_stop = upump_alloc_idler(main_upump_mgr,
-                        uplay_stop, (void *)1, NULL);
-                upump_start(idler_stop);
-            }
-            break;
-        }
-        case ' ': {
-            if (trickp != NULL) {
-                struct urational rate;
-                upipe_trickp_get_rate(trickp, &rate);
-                if (!rate.num) { /* paused */
-                    rate.num = 1;
-                    rate.den = 1;
-                } else {
-                    rate.num = 0;
-                    rate.den = 0;
+        switch (key) {
+            case 'Q':
+            case 'q': {
+                if (main_upump_mgr != NULL) {
+                    upipe_notice_va(upipe, "exit key pressed (%d), exiting",
+                                    key);
+                    struct upump *idler_stop = upump_alloc_idler(main_upump_mgr,
+                            uplay_stop, (void *)1, NULL);
+                    upump_start(idler_stop);
                 }
-                upipe_trickp_set_rate(trickp, rate);
+                break;
             }
-            break;
+            case ' ': {
+                if (trickp != NULL) {
+                    struct urational rate;
+                    upipe_trickp_get_rate(trickp, &rate);
+                    if (!rate.num) { /* paused */
+                        rate.num = 1;
+                        rate.den = 1;
+                    } else {
+                        rate.num = 0;
+                        rate.den = 0;
+                    }
+                    upipe_trickp_set_rate(trickp, rate);
+                }
+                break;
+            }
+            default:
+                upipe_dbg_va(upipe, "key pressed (%d)", key);
+                break;
         }
-        default:
-            upipe_dbg_va(upipe, "key pressed (%d)", key);
-            break;
+    } else {
+        return uprobe_throw_next(uprobe, upipe, event, args);
     }
     return UBASE_ERR_NONE;
 }
